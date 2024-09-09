@@ -859,7 +859,7 @@ always @(posedge clk_i) begin
     reg_r[rd_index_w] <= rd_value_w;
 end
 
-/*Declaracion del pshare*/
+/*Declaracion del gshare*/
 
 reg branch_taken_actual;
 reg branch_predict;
@@ -889,11 +889,8 @@ always @(posedge clk_i) begin
             pht[i] <= 2'b01;  // Estado inicial neutro
         end
     end else begin
-        // Realiza la predicción primero, basada en el estado actual de la PHT
-        branch_predict <= pht[pht_index] >= 2'b10;
-        branch_taken_actual <= branch_taken_w;
-        // Luego, maneja las actualizaciones que se basan en branch_taken_actual
-        if (branch_taken_actual) begin
+        // Maneja las actualizaciones que se basan directamente en branch_taken_w
+        if (branch_taken_w) begin
             if (pht[pht_index] < 2'b11) begin
                 pht[pht_index] <= pht[pht_index] + 1;
             end
@@ -903,8 +900,12 @@ always @(posedge clk_i) begin
             end
         end
 
-        // Actualiza el registro de historial global después de usarlo para la predicción
+        // Actualiza el registro de historial global antes de la predicción
         global_history <= {global_history[HIST_LENGTH-2:0], branch_taken_actual};
+
+        // Realiza la predicción después de actualizar el estado
+        branch_predict <= pht[pht_index] >= 2'b10;
+        branch_taken_actual <= branch_taken_w;
 
         // Contabiliza cada evaluación de predicción y errores
         total_predictions <= total_predictions + 1;
